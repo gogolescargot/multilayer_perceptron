@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/04/17 16:10:48 by ggalon           ###   ########.fr        #
+#    Updated: 2025/04/17 17:33:21 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -29,8 +29,17 @@ class multilayer_perceptron:
 		layer_sizes = [self.input_size] + self.hidden_layers + [self.output_size]
 		
 		for i in range(len(layer_sizes) - 1):
-			self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i+1]))
-			self.biases.append(np.zeros((1, layer_sizes[i+1])))
+			self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]))
+			self.biases.append(np.zeros((1, layer_sizes[i + 1])))
+
+	def feedforward(self, input):
+		layer = input
+		for weight, bias in zip(self.weights, self.biases):
+			layer = sigmoid(np.dot(layer, weight) + bias)
+		return layer
+	
+	def predict(self, input):
+		return np.argmax(softmax(input))
 
 def sigmoid(x):
 	return 1 / (1 + np.exp(-x))
@@ -45,10 +54,11 @@ def standardization(values):
 def main():
 	values = pd.read_csv("data.csv", header=None, usecols=range(2, 32))
 	validation = pd.read_csv("data.csv", header=None, usecols=[1]).replace({'M': 1, 'B': 0})
-	print(values)
-	print(validation)
-	validation_norm = standardization(values)
-	print(validation_norm)
+	values_norm = standardization(values)
+
+	mlp = multilayer_perceptron()
+	output = mlp.feedforward(values_norm.iloc[0, :])
+	print(mlp.predict(output))
 
 if __name__ == '__main__':
 	main()
