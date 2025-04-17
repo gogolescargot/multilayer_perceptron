@@ -1,0 +1,20 @@
+# TODO
+
+## Tasks
+- [x] Normalize Data
+- [ ] Training Data
+- [ ] Validation Data
+- [ ] Training Program
+- [ ] Prediction Program
+- [ ] Display at each epoch the training and validation metrics.
+- [ ] Implement feedforward
+- [ ] Implement backpropagation
+- [ ] Implement gradient descent
+- [ ] Two learning curve graphs (loss, accuracy)
+- [ ] Softmax
+
+## Notes
+- Modular
+- 30 input nodes (data[1:])
+- 2 hidden layers (?)
+- 2 output nodes (M, B) (softmax)
