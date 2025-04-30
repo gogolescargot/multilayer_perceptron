@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/04/23 17:03:58 by ggalon           ###   ########.fr        #
+#    Updated: 2025/04/30 17:04:52 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -124,8 +124,11 @@ def choice(input):
 	return np.argmax(softmax(input), axis=1, keepdims=True)
 
 def binary_cross_entropy(output, expected):
-	output = softmax(output)[:, 1:2]
-	return -np.mean(expected * np.log(output) + (1 - expected) * np.log(1 - output))
+	n_classes = output.shape[1]
+	expected_onehot = np.zeros((expected.size, n_classes))
+	expected_onehot[np.arange(expected.size), expected.flatten()] = 1
+	output = np.clip(output, 1e-7, 1 - 1e-7)
+	return -np.mean(expected_onehot * np.log(output) + (1 - expected_onehot) * np.log(1 - output))
 
 def sigmoid(x):
 	return 1 / (1 + np.exp(-x))
