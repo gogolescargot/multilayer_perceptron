@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/04/30 17:04:52 by ggalon           ###   ########.fr        #
+#    Updated: 2025/05/01 14:23:14 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -151,9 +151,12 @@ def data_parse(path):
 @click.option('--epoch', default="100", help="Number of epochs")
 @click.option('--learning_rate', default="0.01")
 @click.option('--seed', default="0")
-def train(layers, epoch, learning_rate, seed):
-	X_train, y_train = data_parse("data/data_training.csv")
-	X_valid, y_valid = data_parse("data/data_validation.csv")
+@click.option('--input_train', default="data/data_training.csv", help="Input data training file")
+@click.option('--input_valid', default="data/data_validation.csv", help="Input data validation file")
+@click.option('--output', default="model/model.pkl", help="Output model file")
+def train(layers, epoch, learning_rate, seed, input_train, input_valid, output):
+	X_train, y_train = data_parse(input_train)
+	X_valid, y_valid = data_parse(input_valid)
 
 	layers = [int(l) for l in layers.split()]
 	np.random.seed(int(seed))
@@ -162,8 +165,7 @@ def train(layers, epoch, learning_rate, seed):
 	mlp.gradient_descent(X_train, y_train, X_valid, y_valid)
 	mlp.display_graph()
 
-	print(f"Model trained and saved: model/model.pkl")
-
+	print(f"Model trained and saved: {output}")
 
 if __name__ == '__main__':
 	train()

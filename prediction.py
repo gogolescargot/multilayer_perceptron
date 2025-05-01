@@ -6,13 +6,12 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/23 15:34:23 by ggalon            #+#    #+#              #
-#    Updated: 2025/04/23 17:01:35 by ggalon           ###   ########.fr        #
+#    Updated: 2025/05/01 14:21:04 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-from train import multilayer_perceptron, binary_cross_entropy, data_parse
+from train import multilayer_perceptron, binary_cross_entropy, accuracy, choice, data_parse
 
-import pandas as pd
 import click
 
 @click.command()
@@ -24,6 +23,7 @@ def prediction(model, validation):
 	mlp.load_model(model)
 	output = mlp.feedforward(X)[-1]
 	print(f"Error: {binary_cross_entropy(output, y) * 100:2f} %")
+	print(f"Accuracy: {accuracy(choice(output), y) * 100:2f} %")
 
 if __name__ == '__main__':
 	prediction()
