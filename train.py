@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/05/01 14:23:14 by ggalon           ###   ########.fr        #
+#    Updated: 2025/05/01 15:03:01 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -72,6 +72,15 @@ class multilayer_perceptron:
 
 		return nabla_w, nabla_b
 	
+	def early_stopping(self, patience=5, decimals=5):
+		if len(self.losses_valid) >= patience:
+			last_losses = [round(loss, decimals) for loss in self.losses_valid[-patience:]]
+			for i in range(1, len(last_losses)):
+				if last_losses[i] < last_losses[i - 1]:
+					return False
+			return True
+		return False
+
 	def gradient_descent(self, X_train, y_train, X_valid, y_valid):
 		for epoch in range(self.epoch):
 			nabla_w, nabla_b = self.backpropagation(X_train, y_train)
@@ -86,9 +95,14 @@ class multilayer_perceptron:
 			output_valid = self.feedforward(X_valid)[-1]
 			self.losses_valid.append(binary_cross_entropy(output_valid, y_valid))
 			self.accuracies_valid.append(accuracy(choice(output_valid), y_valid))
+			if self.early_stopping():
+				print(f"Early stopping at epoch {epoch + 1}")
+				self.save_model()
+				return epoch + 1
 
 			print(f"epoch {epoch + 1:>6}/{self.epoch} - loss: {binary_cross_entropy(output_train, y_train):.4f} - val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}")
 		self.save_model()
+		return self.epoch
 
 	def save_model(self, path="model/model.pkl"):
 		data = {"weights": self.weights, "biases": self.biases}
@@ -101,10 +115,10 @@ class multilayer_perceptron:
 		self.weights = data["weights"]
 		self.biases = data["biases"]
 
-	def display_graph(self):
+	def display_graph(self, epoch):
 		plt.figure()
-		plt.plot(range(0, self.epoch), self.losses_train, label="Train loss")
-		plt.plot(range(0, self.epoch), self.losses_valid, label="Validation loss")
+		plt.plot(range(0, epoch), self.losses_train, label="Train loss")
+		plt.plot(range(0, epoch), self.losses_valid, label="Validation loss")
 		plt.title("Loss")
 		plt.xlabel("Epoch")
 		plt.ylabel("Loss")
@@ -112,8 +126,8 @@ class multilayer_perceptron:
 		plt.show()
 
 		plt.figure()
-		plt.plot(range(0, self.epoch), self.accuracies_train, label="Train accuracy")
-		plt.plot(range(0, self.epoch), self.accuracies_valid, label="Validation accuracy")
+		plt.plot(range(0, epoch), self.accuracies_train, label="Train accuracy")
+		plt.plot(range(0, epoch), self.accuracies_valid, label="Validation accuracy")
 		plt.title("Accuracy")
 		plt.xlabel("Epoch")
 		plt.ylabel("Accuracy")
@@ -148,7 +162,7 @@ def data_parse(path):
 
 @click.command
 @click.option('--layers', default="16 16", help="Hidden layer structure")
-@click.option('--epoch', default="100", help="Number of epochs")
+@click.option('--epoch', default="100000", help="Number of epochs")
 @click.option('--learning_rate', default="0.01")
 @click.option('--seed', default="0")
 @click.option('--input_train', default="data/data_training.csv", help="Input data training file")
@@ -162,8 +176,8 @@ def train(layers, epoch, learning_rate, seed, input_train, input_valid, output):
 	np.random.seed(int(seed))
 
 	mlp = multilayer_perceptron(hidden_layers=layers, learning_rate=float(learning_rate), epoch=int(epoch))
-	mlp.gradient_descent(X_train, y_train, X_valid, y_valid)
-	mlp.display_graph()
+	epoch = mlp.gradient_descent(X_train, y_train, X_valid, y_valid)
+	mlp.display_graph(epoch)
 
 	print(f"Model trained and saved: {output}")
 
