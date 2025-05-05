@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/05/01 15:03:01 by ggalon           ###   ########.fr        #
+#    Updated: 2025/05/05 13:48:01 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -27,7 +27,7 @@ class multilayer_perceptron:
 		
 		self.weights = []
 		self.biases = []
-		
+
 		self.losses_train = []
 		self.accuracies_train = []
 		self.losses_valid = []
@@ -40,6 +40,17 @@ class multilayer_perceptron:
 		for i in range(len(layer_sizes) - 1):
 			self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]))
 			self.biases.append(np.zeros((1, layer_sizes[i + 1])))
+
+		self.m_weights =[]
+		self.m_biases = []
+		self.v_weights = []
+		self.v_biases = []
+		
+		for i in range(len(layer_sizes) - 1):
+			self.m_weights.append(np.zeros((layer_sizes[i], layer_sizes[i + 1])))
+			self.m_biases.append(np.zeros((1, layer_sizes[i + 1])))
+			self.v_weights.append(np.zeros((layer_sizes[i], layer_sizes[i + 1])))
+			self.v_biases.append(np.zeros((1, layer_sizes[i + 1])))
 
 	def feedforward(self, X):
 		activations = [X]
@@ -95,12 +106,54 @@ class multilayer_perceptron:
 			output_valid = self.feedforward(X_valid)[-1]
 			self.losses_valid.append(binary_cross_entropy(output_valid, y_valid))
 			self.accuracies_valid.append(accuracy(choice(output_valid), y_valid))
+
 			if self.early_stopping():
 				print(f"Early stopping at epoch {epoch + 1}")
 				self.save_model()
 				return epoch + 1
 
 			print(f"epoch {epoch + 1:>6}/{self.epoch} - loss: {binary_cross_entropy(output_train, y_train):.4f} - val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}")
+
+		self.save_model()
+		return self.epoch
+
+	def gradient_descent_adam(self, X_train, y_train, X_valid, y_valid):
+		t = 0
+		beta1=0.9
+		beta2=0.999
+		for epoch in range(self.epoch):
+			t += 1
+			nabla_w, nabla_b = self.backpropagation(X_train, y_train)
+			for i in range(len(self.weights)):
+				self.m_weights[i] = beta1 * self.m_weights[i] + (1 - beta1) * nabla_w[i]
+				self.m_biases[i] = beta1 * self.m_biases[i] + (1 - beta1) * nabla_b[i]
+
+				self.v_weights[i] = beta2 * self.v_weights[i] + (1 - beta2) * (nabla_w[i] ** 2)
+				self.v_biases[i] = beta2 * self.v_biases[i] + (1 - beta2) * (nabla_b[i] ** 2)
+
+				m_hat_w = self.m_weights[i] / (1 - beta1 ** t)
+				v_hat_w = self.v_weights[i] / (1 - beta2 ** t)
+				m_hat_b = self.m_biases[i] / (1 - beta1 ** t)
+				v_hat_b = self.v_biases[i] / (1 - beta2 ** t)
+
+				self.weights[i] -= self.learning_rate * m_hat_w / (np.sqrt(v_hat_w) + 1e-7)
+				self.biases[i] -= self.learning_rate * m_hat_b / (np.sqrt(v_hat_b) + 1e-7)
+
+			output_train = self.feedforward(X_train)[-1]
+			self.losses_train.append(binary_cross_entropy(output_train, y_train))
+			self.accuracies_train.append(accuracy(choice(output_train), y_train))
+
+			output_valid = self.feedforward(X_valid)[-1]
+			self.losses_valid.append(binary_cross_entropy(output_valid, y_valid))
+			self.accuracies_valid.append(accuracy(choice(output_valid), y_valid))
+
+			if self.early_stopping():
+				print(f"Early stopping at epoch {epoch + 1}")
+				self.save_model()
+				return epoch + 1
+
+			print(f"epoch {epoch + 1:>6}/{self.epoch} - loss: {binary_cross_entropy(output_train, y_train):.4f} - val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}")
+
 		self.save_model()
 		return self.epoch
 
@@ -176,7 +229,7 @@ def train(layers, epoch, learning_rate, seed, input_train, input_valid, output):
 	np.random.seed(int(seed))
 
 	mlp = multilayer_perceptron(hidden_layers=layers, learning_rate=float(learning_rate), epoch=int(epoch))
-	epoch = mlp.gradient_descent(X_train, y_train, X_valid, y_valid)
+	epoch = mlp.gradient_descent_adam(X_train, y_train, X_valid, y_valid)
 	mlp.display_graph(epoch)
 
 	print(f"Model trained and saved: {output}")
