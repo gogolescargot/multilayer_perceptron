@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/05/05 13:48:01 by ggalon           ###   ########.fr        #
+#    Updated: 2025/05/06 14:04:40 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,13 +17,17 @@ import pickle as pkl
 import click
 
 class multilayer_perceptron:
-	def __init__(self, hidden_layers=[16, 16], learning_rate=0.01, epoch=100):
+	def __init__(self, hidden_layers=[16, 16], learning_rate=0.01, dropout_rate=0.1, epoch=100, activation="sigmoid"):
 		if len(hidden_layers) < 2:
 			raise ValueError("Neural network must contain at least two hidden layers")
+		if float(dropout_rate) < 0 or float(dropout_rate) > 1:
+			raise ValueError("Dropout rate must be between 0 and 1")
+
 		self.input_size = 30
 		self.output_size = 2
 		self.hidden_layers = hidden_layers
 		self.learning_rate = learning_rate
+		self.dropout_rate = dropout_rate
 		
 		self.weights = []
 		self.biases = []
@@ -36,9 +40,18 @@ class multilayer_perceptron:
 		self.epoch = epoch
 		
 		layer_sizes = [self.input_size] + self.hidden_layers + [self.output_size]
+
+		if activation == "relu":
+			self.activation_function = relu
+			self.activation_derivative = relu_derivative
+		elif activation == "sigmoid":
+			self.activation_function = sigmoid
+			self.activation_derivative = sigmoid_derivative
+		else:
+			raise ValueError("Unsupported activation function. Choose 'relu' or 'sigmoid'")
 		
 		for i in range(len(layer_sizes) - 1):
-			self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]))
+			self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]) * np.sqrt(2 / layer_sizes[i]))
 			self.biases.append(np.zeros((1, layer_sizes[i + 1])))
 
 		self.m_weights =[]
@@ -52,14 +65,19 @@ class multilayer_perceptron:
 			self.v_weights.append(np.zeros((layer_sizes[i], layer_sizes[i + 1])))
 			self.v_biases.append(np.zeros((1, layer_sizes[i + 1])))
 
-	def feedforward(self, X):
+	def feedforward(self, X, training=True):
 		activations = [X]
 		layer = X
-		for weight, bias in zip(self.weights, self.biases):
+		for i, (weight, bias) in enumerate(zip(self.weights, self.biases)):
 			z = np.dot(layer, weight) + bias
-			layer = sigmoid(z)
+			layer = self.activation_function(z)
+			
+			if training and i < len(self.weights) - 1:
+				dropout_mask = (np.random.rand(*layer.shape) > self.dropout_rate).astype(float)
+				layer *= dropout_mask
+				layer /= (1 - self.dropout_rate)
+			
 			activations.append(layer)
-		
 		return activations
 	
 	def one_hot_encoding(self, y):
@@ -71,19 +89,19 @@ class multilayer_perceptron:
 		activations = self.feedforward(X)
 		y_onehot = self.one_hot_encoding(y)
 
-		delta = (activations[-1] - y_onehot) * activations[-1] * (1 - activations[-1])
+		delta = (activations[-1] - y_onehot) * self.activation_derivative(activations[-1])
 		nabla_w = [np.dot(activations[-2].T, delta)]
 		nabla_b = [np.sum(delta, axis=0, keepdims=True)]
 
 		for layer in range(2, len(self.weights) + 1):
-			sp = activations[-layer] * (1 - activations[-layer])
+			sp = self.activation_derivative(activations[-layer])
 			delta = np.dot(delta, self.weights[-layer + 1].T) * sp
 			nabla_w.insert(0, np.dot(activations[-layer - 1].T, delta))
 			nabla_b.insert(0, np.sum(delta, axis=0, keepdims=True))
 
 		return nabla_w, nabla_b
 	
-	def early_stopping(self, patience=5, decimals=5):
+	def early_stopping(self, patience=7, decimals=5):
 		if len(self.losses_valid) >= patience:
 			last_losses = [round(loss, decimals) for loss in self.losses_valid[-patience:]]
 			for i in range(1, len(last_losses)):
@@ -139,11 +157,11 @@ class multilayer_perceptron:
 				self.weights[i] -= self.learning_rate * m_hat_w / (np.sqrt(v_hat_w) + 1e-7)
 				self.biases[i] -= self.learning_rate * m_hat_b / (np.sqrt(v_hat_b) + 1e-7)
 
-			output_train = self.feedforward(X_train)[-1]
+			output_train = self.feedforward(X_train, training=True)[-1]
 			self.losses_train.append(binary_cross_entropy(output_train, y_train))
 			self.accuracies_train.append(accuracy(choice(output_train), y_train))
 
-			output_valid = self.feedforward(X_valid)[-1]
+			output_valid = self.feedforward(X_valid, training=False)[-1]
 			self.losses_valid.append(binary_cross_entropy(output_valid, y_valid))
 			self.accuracies_valid.append(accuracy(choice(output_valid), y_valid))
 
@@ -200,6 +218,15 @@ def binary_cross_entropy(output, expected):
 def sigmoid(x):
 	return 1 / (1 + np.exp(-x))
 
+def sigmoid_derivative(x):
+	return x * (1 - x)
+
+def relu(x):
+	return np.maximum(0, x)
+
+def relu_derivative(x):
+	return (x > 0).astype(float)
+
 def softmax(x):
 	e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
 	return e_x / np.sum(e_x, axis=1, keepdims=True)
@@ -215,20 +242,22 @@ def data_parse(path):
 
 @click.command
 @click.option('--layers', default="16 16", help="Hidden layer structure")
-@click.option('--epoch', default="100000", help="Number of epochs")
-@click.option('--learning_rate', default="0.01")
+@click.option('--epoch', default="1000", help="Number of epochs")
+@click.option('--learning_rate', default="0.01", help="Learning rate")
+@click.option('--dropout_rate', default="0", help="Dropout rate")
 @click.option('--seed', default="0")
 @click.option('--input_train', default="data/data_training.csv", help="Input data training file")
 @click.option('--input_valid', default="data/data_validation.csv", help="Input data validation file")
 @click.option('--output', default="model/model.pkl", help="Output model file")
-def train(layers, epoch, learning_rate, seed, input_train, input_valid, output):
+@click.option('--activation', default="sigmoid", help="Activation function (relu or sigmoid)")
+def train(layers, epoch, learning_rate, dropout_rate, seed, input_train, input_valid, output, activation):
 	X_train, y_train = data_parse(input_train)
 	X_valid, y_valid = data_parse(input_valid)
 
 	layers = [int(l) for l in layers.split()]
 	np.random.seed(int(seed))
 
-	mlp = multilayer_perceptron(hidden_layers=layers, learning_rate=float(learning_rate), epoch=int(epoch))
+	mlp = multilayer_perceptron(hidden_layers=layers, learning_rate=float(learning_rate), epoch=int(epoch), dropout_rate=float(dropout_rate), activation=activation)
 	epoch = mlp.gradient_descent_adam(X_train, y_train, X_valid, y_valid)
 	mlp.display_graph(epoch)
 
