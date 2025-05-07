@@ -6,7 +6,7 @@
 #    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/05/06 14:04:40 by ggalon           ###   ########.fr        #
+#    Updated: 2025/05/07 14:29:39 by ggalon           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -51,7 +51,10 @@ class multilayer_perceptron:
 			raise ValueError("Unsupported activation function. Choose 'relu' or 'sigmoid'")
 		
 		for i in range(len(layer_sizes) - 1):
-			self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]) * np.sqrt(2 / layer_sizes[i]))
+			if activation == "relu":
+				self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]) * np.sqrt(2 / layer_sizes[i]))
+			elif activation == "sigmoid":
+				self.weights.append(np.random.randn(layer_sizes[i], layer_sizes[i + 1]) * np.sqrt(1 / layer_sizes[i]))
 			self.biases.append(np.zeros((1, layer_sizes[i + 1])))
 
 		self.m_weights =[]
