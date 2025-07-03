@@ -1,17 +1,6 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    train.py                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: ggalon <ggalon@student.42lyon.fr>          +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/04/16 15:26:53 by ggalon            #+#    #+#              #
-#    Updated: 2025/06/06 14:31:05 by ggalon           ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
-
 import pickle as pkl
 import signal
+import os
 
 import click
 import matplotlib.pyplot as plt
@@ -174,7 +163,9 @@ class multilayer_perceptron:
                 return epoch + 1
 
             print(
-                f"epoch {epoch + 1:>6}/{self.epoch} - loss: {binary_cross_entropy(output_train, y_train):.4f} - val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}"
+                f"epoch {epoch + 1:>6}/{self.epoch} - "
+                f"loss: {binary_cross_entropy(output_train, y_train):.4f} - "
+                f"val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}"
             )
 
         self.save_model()
@@ -236,15 +227,18 @@ class multilayer_perceptron:
                 return epoch + 1
 
             print(
-                f"epoch {epoch + 1:>6}/{self.epoch} - loss: {binary_cross_entropy(output_train, y_train):.4f} - val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}"
+                f"epoch {epoch + 1:>6}/{self.epoch} - "
+                f"loss: {binary_cross_entropy(output_train, y_train):.4f} - "
+                f"val_loss: {binary_cross_entropy(output_valid, y_valid):.4f}"
             )
 
         self.save_model()
         return self.epoch
 
     def save_model(self, path="model/model.pkl"):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         data = {"weights": self.weights, "biases": self.biases}
-        with open("model/model.pkl", "wb") as f_w:
+        with open(path, "wb") as f_w:
             pkl.dump(data, f_w)
 
     def load_model(self, path="model/model.pkl"):
