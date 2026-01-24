@@ -256,6 +256,7 @@ class multilayer_perceptron:
         plt.ylabel("Loss")
         plt.legend()
         plt.show()
+        plt.savefig("model/loss.png")
 
         plt.figure()
         plt.plot(
@@ -269,6 +270,7 @@ class multilayer_perceptron:
         plt.ylabel("Accuracy")
         plt.legend()
         plt.show()
+        plt.savefig("model/accuracy.png")
 
 
 def choice(input):
