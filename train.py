@@ -248,29 +248,28 @@ class multilayer_perceptron:
         self.biases = data["biases"]
 
     def display_graph(self, epoch):
-        plt.figure()
-        plt.plot(range(0, epoch), self.losses_train, label="Train loss")
-        plt.plot(range(0, epoch), self.losses_valid, label="Validation loss")
-        plt.title("Loss")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.legend()
-        plt.show()
-        plt.savefig("model/loss.png")
+        fig1, ax1 = plt.subplots()
+        ax1.plot(range(0, epoch), self.losses_train, label="Train loss")
+        ax1.plot(range(0, epoch), self.losses_valid, label="Validation loss")
+        ax1.set_title("Loss")
+        ax1.set_xlabel("Epoch")
+        ax1.set_ylabel("Loss")
+        ax1.legend()
+        fig1.savefig("model/loss.png")
 
-        plt.figure()
-        plt.plot(
+        fig2, ax2 = plt.subplots()
+        ax2.plot(
             range(0, epoch), self.accuracies_train, label="Train accuracy"
         )
-        plt.plot(
+        ax2.plot(
             range(0, epoch), self.accuracies_valid, label="Validation accuracy"
         )
-        plt.title("Accuracy")
-        plt.xlabel("Epoch")
-        plt.ylabel("Accuracy")
-        plt.legend()
+        ax2.set_title("Accuracy")
+        ax2.set_xlabel("Epoch")
+        ax2.set_ylabel("Accuracy")
+        ax2.legend()
+        fig2.savefig("model/accuracy.png")
         plt.show()
-        plt.savefig("model/accuracy.png")
 
 
 def choice(input):
@@ -318,6 +317,7 @@ def data_parse(path):
     y = (
         pd.read_csv(path, header=None, usecols=[1])
         .replace({"B": 0, "M": 1})
+        .infer_objects(copy=False)
         .to_numpy()
     )
 

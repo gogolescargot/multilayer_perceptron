@@ -37,11 +37,14 @@ def prediction(model, validation):
         output = mlp.feedforward(X)[-1]
         predictions = choice(output)
         precision, recall, f1 = precision_recall_f1(predictions, y)
-        print(f"Precision: {precision * 100:2f} %")
-        print(f"Recall: {recall * 100:2f} %")
-        print(f"F1 Score: {f1 * 100:2f} %")
-        print(f"Error: {binary_cross_entropy(output, y) * 100:2f} %")
-        print(f"Accuracy: {accuracy(choice(output), y) * 100:2f} %")
+        acc = accuracy(predictions, y)
+        bce = binary_cross_entropy(output, y)
+        print(f"Precision: {precision * 100:.2f} %")
+        print(f"Recall: {recall * 100:.2f} %")
+        print(f"F1 Score: {f1 * 100:.2f} %")
+        print(f"Log loss: {bce * 100:.2f} %")
+        print(f"Accuracy: {acc * 100:.2f} %")
+        print(f"Error: {(1 - acc) * 100:.2f} %")
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")
     except ValueError as e:
